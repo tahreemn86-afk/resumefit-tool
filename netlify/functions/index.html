@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResumeFit — Tailor your resume to any job in seconds</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .serif { font-family: Georgia, 'Times New Roman', serif; }
+  ::selection { background: #FDE68A; }
+</style>
+</head>
+<body class="bg-[#0F1115] text-[#E7E5E1] min-h-screen">
+
+  <header class="border-b border-white/10">
+    <div class="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded bg-[#F2C879] flex items-center justify-center text-[#0F1115] font-bold text-sm">R</div>
+        <span class="serif text-lg tracking-tight">ResumeFit</span>
+      </div>
+      <span class="text-xs text-[#9B9890] border border-white/10 rounded-full px-3 py-1">Free — unlimited use</span>
+    </div>
+  </header>
+
+  <section class="max-w-4xl mx-auto px-5 pt-14 pb-8">
+    <h1 class="serif text-4xl sm:text-5xl leading-tight text-[#F5F3EF]">
+      Paste your resume.<br>Paste the job. <span class="text-[#F2C879]">Get past the bots.</span>
+    </h1>
+    <p class="mt-4 text-[#B7B4AC] max-w-xl">
+      Most resumes never reach a human — an ATS filters them out first. ResumeFit rewrites your bullet points to match the job description and scores your match before you apply.
+    </p>
+  </section>
+
+  <section class="max-w-4xl mx-auto px-5 pb-24">
+    <div class="grid md:grid-cols-2 gap-4">
+
+      <div class="bg-[#171A20] border border-white/10 rounded-lg p-5">
+        <label for="job-desc" class="block text-sm font-medium text-[#F5F3EF] mb-2">Target job description</label>
+        <textarea id="job-desc" rows="9" placeholder="Paste the full job posting here..."
+          class="w-full bg-[#0F1115] border border-white/10 rounded-md p-3 text-sm text-[#E7E5E1] placeholder-[#6B6862] focus:outline-none focus:ring-1 focus:ring-[#F2C879] resize-none"></textarea>
+      </div>
+
+      <div class="bg-[#171A20] border border-white/10 rounded-lg p-5">
+        <label for="resume-text" class="block text-sm font-medium text-[#F5F3EF] mb-2">Your current resume</label>
+        <textarea id="resume-text" rows="9" placeholder="Paste your resume text here..."
+          class="w-full bg-[#0F1115] border border-white/10 rounded-md p-3 text-sm text-[#E7E5E1] placeholder-[#6B6862] focus:outline-none focus:ring-1 focus:ring-[#F2C879] resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="mt-5 flex items-center gap-4">
+      <button id="generate-btn"
+        class="bg-[#F2C879] text-[#0F1115] font-semibold text-sm px-5 py-2.5 rounded-md hover:bg-[#F0BE5F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        Generate optimized resume
+      </button>
+      <span id="status-text" class="text-sm text-[#9B9890]"></span>
+    </div>
+
+    <div id="output-panel" class="hidden mt-8 bg-[#171A20] border border-white/10 rounded-lg p-6">
+      <div class="flex items-baseline justify-between mb-4">
+        <h2 class="serif text-xl text-[#F5F3EF]">Your results</h2>
+        <div class="text-right">
+          <div class="text-3xl font-bold text-[#F2C879]" id="match-score">—</div>
+          <div class="text-xs text-[#9B9890]">ATS match score</div>
+        </div>
+      </div>
+      <div id="rewritten-content" class="text-sm text-[#D8D5CE] whitespace-pre-wrap leading-relaxed"></div>
+    </div>
+  </section>
+
+  <script>
+    const genBtn = document.getElementById('generate-btn');
+    const statusText = document.getElementById('status-text');
+    const outputPanel = document.getElementById('output-panel');
+    const rewrittenContent = document.getElementById('rewritten-content');
+    const matchScore = document.getElementById('match-score');
+
+    genBtn.addEventListener('click', async () => {
+      const jobDesc = document.getElementById('job-desc').value.trim();
+      const resumeText = document.getElementById('resume-text').value.trim();
+
+      if (!jobDesc || !resumeText) {
+        statusText.textContent = 'Please fill in both fields.';
+        return;
+      }
+
+      genBtn.disabled = true;
+      statusText.textContent = 'Analyzing and rewriting...';
+      outputPanel.classList.add('hidden');
+
+      try {
+        const res = await fetch('/.netlify/functions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobDescription: jobDesc, resumeText: resumeText })
+        });
+
+        if (!res.ok) throw new Error('Server error');
+
+        const data = await res.json();
+
+        matchScore.textContent = (data.matchScore ?? '—') + (data.matchScore ? '%' : '');
+        rewrittenContent.textContent = data.rewrittenText || 'No output returned.';
+        outputPanel.classList.remove('hidden');
+        statusText.textContent = '';
+      } catch (err) {
+        statusText.textContent = 'Something went wrong. Please try again.';
+        console.error(err);
+      } finally {
+        genBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
